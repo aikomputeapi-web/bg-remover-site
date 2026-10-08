@@ -1,0 +1,35 @@
+---
+import Base from "@/layouts/Base.astro";
+import { getCollection } from "astro:content";
+
+const posts = (await getCollection("blog")).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+---
+<Base title="Blog - Free Background Remover" description="Guides and tips for removing image backgrounds: tutorials, tools, and how-tos from the FreeBG team.">
+  <section class="max-w-3xl mx-auto px-4 py-12">
+    <h1 class="text-3xl font-extrabold">Blog</h1>
+    <p class="text-slate-400 mt-2">Guides, tips, and tutorials on background removal.</p>
+    <div class="mt-8 space-y-6">
+      {posts.map((post) => (
+        <article class="rounded-xl border border-slate-800 p-6 bg-slate-900/50 hover:border-fuchsia-400/50 transition-colors">
+          <a href={`/blog/${post.id}/`}>
+            <h2 class="text-xl font-bold text-fuchsia-300">{post.data.title}</h2>
+            <p class="text-slate-400 mt-2">{post.data.description}</p>
+            <p class="text-xs text-slate-500 mt-3">
+              <time datetime={post.data.pubDate.toISOString()}>
+                {post.data.pubDate.toLocaleDateString("en-us", { year: "numeric", month: "short", day: "numeric" })}
+              </time>
+              {post.data.tags.length > 0 && (
+                <span class="ml-2 text-slate-600">|</span>
+              )}
+              {post.data.tags.map((t) => (
+                <span class="ml-1 text-xs text-cyan-500">#{t}</span>
+              ))}
+            </p>
+          </a>
+        </article>
+      ))}
+    </div>
+  </section>
+</Base>

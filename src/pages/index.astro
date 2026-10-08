@@ -1,0 +1,117 @@
+---
+import Base from "@/layouts/Base.astro";
+---
+<Base>
+  <section class="max-w-5xl mx-auto px-4 py-12 text-center">
+    <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight">
+      Remove image backgrounds <span class="bg-gradient-to-r from-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">free, instantly, privately</span>
+    </h1>
+    <p class="mt-4 text-lg text-slate-300 max-w-2xl mx-auto">
+      Drop a photo and get a clean transparent PNG in seconds. Powered by on-device AI:
+      your image never leaves your browser. No signup, no watermark, no limits.
+    </p>
+  </section>
+
+  <section class="max-w-3xl mx-auto px-4">
+    <div id="dropzone" class="border-2 border-dashed border-slate-700 rounded-2xl p-10 text-center cursor-pointer hover:border-fuchsia-400 transition-colors bg-slate-900/50">
+      <p class="text-slate-300">Drag and drop an image here, or <span class="text-fuchsia-400 font-semibold">browse</span></p>
+      <p class="text-xs text-slate-500 mt-2">JPG, PNG, WebP - processed locally in your browser</p>
+      <input id="file-input" type="file" accept="image/png,image/jpeg,image/webp" class="hidden" />
+    </div>
+
+    <div id="status" class="hidden mt-6 text-center text-slate-300">
+      <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-fuchsia-400"></div>
+      <p id="status-text" class="mt-2 text-sm">Loading AI model (first run only, ~40MB)...</p>
+    </div>
+
+    <div id="results" class="hidden mt-8 grid sm:grid-cols-2 gap-4 items-start">
+      <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900">
+        <p class="text-xs text-slate-400 p-3 pb-1">Original</p>
+        <img id="orig-img" class="w-full" alt="Original image" />
+      </div>
+      <div class="rounded-xl overflow-hidden border border-slate-800 bg-[repeating-conic-gradient(#334155_0%_25%,#1e293b_0%_50%)] bg-[length:20px_20px]">
+        <p class="text-xs text-slate-400 p-3 pb-1">Background removed</p>
+        <img id="cutout-img" class="w-full" alt="Image with background removed" />
+      </div>
+    </div>
+
+    <div id="download-row" class="hidden mt-6 text-center">
+      <a id="download-btn" download="cutout.png" class="inline-block bg-gradient-to-r from-fuchsia-500 to-cyan-500 hover:from-fuchsia-400 hover:to-cyan-400 text-white font-bold py-3 px-8 rounded-xl transition-all">
+        Download transparent PNG
+      </a>
+    </div>
+  </section>
+
+  <section class="max-w-5xl mx-auto px-4 py-16 grid sm:grid-cols-3 gap-6 text-center">
+    <div class="rounded-xl border border-slate-800 p-6 bg-slate-900/50">
+      <div class="text-3xl">🔒</div>
+      <h2 class="font-bold mt-2">100% private</h2>
+      <p class="text-sm text-slate-400 mt-1">AI runs on your device. Photos never leave your browser.</p>
+    </div>
+    <div class="rounded-xl border border-slate-800 p-6 bg-slate-900/50">
+      <div class="text-3xl">⚡</div>
+      <h2 class="font-bold mt-2">Instant cutouts</h2>
+      <p class="text-sm text-slate-400 mt-1">Transparent PNGs in seconds, even with fine hair details.</p>
+    </div>
+    <div class="rounded-xl border border-slate-800 p-6 bg-slate-900/50">
+      <div class="text-3xl">♾️</div>
+      <h2 class="font-bold mt-2">Free and unlimited</h2>
+      <p class="text-sm text-slate-400 mt-1">No accounts, no credits, no watermarks. Use it as much as you want.</p>
+    </div>
+  </section>
+
+  <script>
+    import("@imgly/background-removal").then(({ removeBackground }) => {
+      const dropzone = document.getElementById("dropzone")!;
+      const fileInput = document.getElementById("file-input") as HTMLInputElement;
+      const status = document.getElementById("status")!;
+      const statusText = document.getElementById("status-text")!;
+      const results = document.getElementById("results")!;
+      const downloadRow = document.getElementById("download-row")!;
+      const origImg = document.getElementById("orig-img") as HTMLImageElement;
+      const cutoutImg = document.getElementById("cutout-img") as HTMLImageElement;
+      const downloadBtn = document.getElementById("download-btn") as HTMLAnchorElement;
+
+      dropzone.addEventListener("click", () => fileInput.click());
+      dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("border-fuchsia-400"); });
+      dropzone.addEventListener("dragleave", () => dropzone.classList.remove("border-fuchsia-400"));
+      dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropzone.classList.remove("border-fuchsia-400");
+        const file = e.dataTransfer?.files?.[0];
+        if (file) process(file);
+      });
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files?.[0];
+        if (file) process(file);
+      });
+
+      async function process(file: File) {
+        status.classList.remove("hidden");
+        results.classList.add("hidden");
+        downloadRow.classList.add("hidden");
+        statusText.textContent = "Removing background (on your device)...";
+        const blobUrl = URL.createObjectURL(file);
+        origImg.src = blobUrl;
+        try {
+          const blob = await removeBackground(file, {
+            progress: (key: string, current: number, total: number) => {
+              if (key.startsWith("fetch")) {
+                const pct = total ? Math.round((current / total) * 100) : 0;
+                statusText.textContent = `Loading AI model (first run only): ${pct}%`;
+              }
+            },
+          });
+          const url = URL.createObjectURL(blob);
+          cutoutImg.src = url;
+          downloadBtn.href = url;
+          status.classList.add("hidden");
+          results.classList.remove("hidden");
+          downloadRow.classList.remove("hidden");
+        } catch (err) {
+          statusText.textContent = "Something went wrong. Try another image.";
+        }
+      }
+    });
+  </script>
+</Base>
