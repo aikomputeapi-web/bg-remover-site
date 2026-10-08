@@ -5,7 +5,7 @@ import sitemap from "@astrojs/sitemap";
 import { fileURLToPath } from "node:url";
 
 export default defineConfig({
-  site: "https://bg-remover-site.pages.dev",
+  site: "https://bg-remover-site-5kc.pages.dev",
   integrations: [sitemap()],
   vite: {
     plugins: [tailwindcss()],
